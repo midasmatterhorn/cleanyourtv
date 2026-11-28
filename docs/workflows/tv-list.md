@@ -9,6 +9,11 @@
    - The first line is a comment with the exact model, Android version and firmware build
      (`tools/tv.py --probe` prints them).
    - Then the Apply and Undo lines, the stock launcher and Live TV package if they differ, and what was kept and why.
+     Where the header says how to open ADB (`Developer options`, `Network debugging`, `adb tcpip 5555`),
+     say how to close it again as well: switch that same toggle off when you are done, and
+     `tools/adb-closed.py <tv ip>` is what reports the port closed. `docs/DOS-AND-DONTS.md`'s "No leaving
+     ADB open" is the rule, and on some firmware the port stays listening across reboots until the toggle
+     goes off (`tcl-55q9k`'s header says so for its own set).
      `tests/test_list_gives_commands.py` refuses a header that names none of the five scripts and no
      README: a folder whose firmware needs a batch of its own gives the commands in its `README.md`
      instead, which counts.
@@ -22,6 +27,18 @@
      alone.
 3. List only packages you actually disabled and lived with for a few days. Note anything you re-enabled.
    Mark untested entries as comments.
+   - Restart the TV once with the list applied and write in the header what held: the packages still disabled,
+     Home still working (on the launcher you installed, if you installed one) and Wi-Fi back on its own. It is
+     the check `CONTRIBUTING.md` asks for, and most headers carry it
+     (`examples/amazon-fire-tv-stick-4k-max-2021/debloat.txt`: "Rebooted twice after applying: everything below
+     stayed disabled"); a list PR without it is asked for the reboot before it is merged.
+   - A package the next owner may want goes in commented out, not on an active line. The person's own streaming
+     apps, the firmware updater and the phone-remote service (`com.google.android.tv.remote.service`) are choices
+     each owner makes for themselves, so a set that found one of them unused keeps the line in the list under a
+     note that says so (`# This set has these off; uncomment the ones you don't use`) rather than sending
+     `pm disable-user` at it: a live line takes that app off a TV whose owner wanted it, and the line is commented
+     out on merge anyway. The TV middleware `PROMPT.md` keeps on is written the same way, in the list and never
+     sent.
 4. Add `examples/<folder>/tv.json` beside the list, like `examples/xiaomi-mi-tv-4a/tv.json`:
    ```json
    {
@@ -33,7 +50,7 @@
    ```
    `tv` and `os` fill the folder's row in the TV tables, `brand` the README's brand grid (spelled as it is there),
    `notes` the Notes cell in `examples/README.md`: one line of Markdown, links relative to `examples/`, `\|`
-   for a pipe. Two things in it are read back: a package named in backticks with `kept`, `disabled` or
+   for a pipe. Three things in it are read back: a package named in backticks with `kept`, `disabled` or
    `refused` straight after it is a claim about what the list does, and
    `tests/test_example_readme_package_fates.py` holds it to the lists the folder ships - `kept` and `refused`
    have to be off an active line of every one of them, `disabled` on an active line of any (the stock launcher
@@ -41,7 +58,11 @@
    `disabled` however the comment reads, a package any list still sends is not `kept`, and a package a second
    list turns off can be stated as `disabled`. The other is a package count ("19 packages"), which the same
    test compares with the number of packages `debloat.txt` sends, so a line commented out of `debloat.txt` moves
-   the number in the row with it - a row that also counts a second list says which list it means. Any other
+   the number in the row with it - a row that also counts a second list says which list it means. The third is
+   the name of every list in the folder: a folder that ships a `debloat-*.txt` beside `debloat.txt` (step 2)
+   names that file in `notes`, because the row is the only place a reader browsing the tables learns the list
+   exists, and a row that names a list the folder does not ship is refused the same way -
+   `tests/test_second_lists_named_in_row.py` holds both directions. Any other
    wording after the name claims nothing, which is
    how `notes` stays free prose. `readme_os` is the one optional key: it is the OS cell of the two-column
    table in `README.nl.md`,
@@ -57,12 +78,12 @@
    picture and leaves the sentence where it was - the round that took the tree to 387 models shipped 380 in the
    story two screens below the card. `tests/test_press_counts.py` reads the pair out of the sentence and holds it
    to the alt text beside it (`README.de.md states (TV models, brands) (380, 101) in its story sentence and its
-   card states (387, 103)`), so they move in the same commit. The sentence is not only on those five pages:
-   `README.pt-BR.md`, `README.he.md`, `README.uz.md`, `README.fr.md` and `README.es.md` carry the story
-   paragraph without the card, so `tools/gen_tables.py` writes nothing there and the same check holds their
-   pair to `README.md`'s alt text in the same words a card page's pair is held to - a regeneration that bumps
-   the five pages above and stops leaves those five red. A translation that copies the story paragraph joins
-   them the day it lands.
+   card states (387, 103)`), so they move in the same commit. The sentence is not only on the pages that show
+   the card: `README.pt-BR.md`, `README.he.md`, `README.uz.md`, `README.fr.md`, `README.es.md` and
+   `README.el.md` carry the story paragraph without it, so `tools/gen_tables.py` writes nothing there and the
+   same check holds their pair to `README.md`'s alt text in the same words a card page's pair is held to - a
+   regeneration that bumps the pages above and stops leaves those pages red. A translation that copies the
+   story paragraph joins them the day it lands.
    The brand grid itself is hand-kept on one page:
    `README.he.md` carries neither the card nor the `tv-brands` markers, so `tools/gen_tables.py` cannot write
    it and `tests/test_readme_he_brand_block.py` reads its grid, its two-list line, its single-list names and
@@ -85,8 +106,10 @@
    `TV_HOST=<tv ip> tools/theme.sh examples/philips-google-tv-ta7/theme`. Both checks that read a shipped `config.json`
    (`tests/test_shipped_config_keys_are_read.py` and `tests/test_shipped_config_values.py`) walk
    `examples/` at any depth, so a key or a value in that subfolder is judged where it sits rather than
-   skipped, and `tools/theme.sh` is handed the folder that holds the `config.json` - the subfolder, not
-   the list folder, which has none.
+   skipped. `tools/theme.sh` is handed the folder that holds the `config.json` you are pushing, which for
+   a theme is the subfolder. `examples/xiaomi-mitv-afmu0` is the one of the six that also keeps a
+   `config.json` at the folder's own root, from a second unit of the same board: the subfolder is the
+   theme its `README.md` has the owner push, and the root file is that other unit's dock and button map.
    A package count ("The 38 packages that were disabled", "the debloat list disables 71 packages", "The
    list disables **N packages**", "The list contains N packages", "`debloat.txt` is the list: N
    packages") is compared with what `tools/disable.sh` would send for the list, so a line added or

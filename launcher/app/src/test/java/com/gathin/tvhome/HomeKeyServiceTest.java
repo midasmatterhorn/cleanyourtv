@@ -92,4 +92,11 @@ public class HomeKeyServiceTest {
                 "com.tianci.movieplatform"));
         assertEquals("", HomeKeyService.bootHomeActivity(null, null, "com.tianci.movieplatform"));
     }
+
+    @Test public void looksAgainOnlyWhileTheStockHomeKeptTheScreen() {
+        assertTrue(HomeKeyService.redirectAgain(false, false, 2));
+        assertFalse(HomeKeyService.redirectAgain(true, false, 2));
+        assertFalse(HomeKeyService.redirectAgain(false, true, 2));
+        assertFalse(HomeKeyService.redirectAgain(false, false, 0));
+    }
 }

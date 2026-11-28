@@ -328,6 +328,9 @@ class GeneratorTest(unittest.TestCase):
                  # rather than written into a row `--check` never agrees with (the test below).
                  (tv("X\rGoogle TV", "X"), "one line"),
                  (tv("X", "X", notes="[note](../docs/devices/none.md)"), "leads nowhere"),
+                 # A file that is there on this machine, but not in the checkout the page links into.
+                 (tv("X", "X", notes="[note](/)"), "leads nowhere"),
+                 (tv("X", "X", notes="[note](" + "../" * 40 + "etc)"), "leads nowhere"),
                  # Not a string: refused by name, where the link check used to end in a TypeError (exit 1).
                  (tv("X", "X", notes=["a", "b"]), '"notes" must be'),
                  (tv(["X"], "X"), '"tv" must be')]
@@ -339,6 +342,24 @@ class GeneratorTest(unittest.TestCase):
                 self.assertIn("examples/x-1/tv.json", str(caught.exception))
                 self.assertIn(message, str(caught.exception))
                 self.assertEqual(run(root, "--check")[0], 2)
+
+    def test_the_link_check_works_with_a_relative_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = tree(tmp, [("x-1", tv("X", "X", notes="[note](x-1/tv.json)"))])
+            before = Path.cwd()
+            os.chdir(root)
+            try:
+                for relative in (".", "../" + root.name):
+                    with self.subTest(root=relative):
+                        gen_tables.load(Path(relative))
+                (root / "examples" / "x-1" / "tv.json").write_text(
+                    json.dumps(tv("X", "X", notes="[note](" + "../" * 40 + "etc)")), encoding="utf-8")
+                for relative in (".", "../" + root.name):
+                    with self.subTest(root=relative, escape=True), self.assertRaises(gen_tables.Problem) as caught:
+                        gen_tables.load(Path(relative))
+                    self.assertIn("leads nowhere", str(caught.exception))
+            finally:
+                os.chdir(before)
 
     def test_a_carriage_return_is_refused_instead_of_written_and_never_agreed_with(self):
         """A cell with a bare CR is not one line, and a run that wrote it would never agree with itself.
